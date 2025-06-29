@@ -8,7 +8,7 @@ public class LoginServlet extends HttpServlet {
         String password = request.getParameter("password");
 
         // ☠️ 취약점 1: 하드코딩된 DB 비밀번호
-        String dbPassword = "root123"; 
+        String dbPassword = "whitehat1234"; 
 
         try {
             // ☠️ 취약점 2: SQL Injection 가능
