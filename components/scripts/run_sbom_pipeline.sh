@@ -6,6 +6,7 @@ REPO_NAME="$2"  # 이제 병렬 실행 시 고유한 이름이 전달됨
 BUILD_ID="$3"
 COMMIT_ID="$4"  # 병렬 실행 시 커밋 ID 전달됨
 
+# REPO_NAME과 BUILD_ID는 동적으로 받는 값으로 설정
 if [[ -z "$REPO_URL" || -z "$REPO_NAME" ]]; then
     echo "❌ REPO_URL과 REPO_NAME을 인자로 전달해야 합니다."
     exit 1
