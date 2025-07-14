@@ -52,9 +52,10 @@ detect_java_version() {
 upload_sbom() {
     local REPO_NAME="$1"
     local BUILD_ID="$2"
+    local COMMIT_ID="$3"  # 추가: 커밋 ID를 받도록 수정
 
-    if [[ -z "$REPO_NAME" || -z "$BUILD_ID" || -z "$REPO_DIR" ]]; then
-        echo "❌ upload_sbom 함수 호출 시 REPO_NAME, BUILD_ID, REPO_DIR가 필요합니다."
+    if [[ -z "$REPO_NAME" || -z "$BUILD_ID" || -z "$REPO_DIR" || -z "$COMMIT_ID" ]]; then
+        echo "❌ upload_sbom 함수 호출 시 REPO_NAME, BUILD_ID, REPO_DIR, COMMIT_ID가 필요합니다."
         return 1
     fi
 
@@ -66,8 +67,9 @@ upload_sbom() {
         return 1
     fi
 
-    local PROJECT_VERSION="${BUILD_ID}"
-    echo "🚀 SBOM 업로드 시작: $SBOM_FILE (projectVersion: $PROJECT_VERSION, tag: $TAG)"
+    # PROJECT_VERSION을 buildId와 commitId로 설정
+    local PROJECT_VERSION="${BUILD_ID}_${COMMIT_ID}"
+    echo "🚀 SBOM 업로드 시작: $SBOM_FILE (projectVersion: $PROJECT_VERSION)"
 
     curl -X POST http://localhost:8080/api/v1/bom \
         -H "X-Api-Key: $DT_API_KEY" \
