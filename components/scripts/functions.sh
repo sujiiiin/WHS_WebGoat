@@ -1,3 +1,5 @@
+// 인자값 바꾼거 
+
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
