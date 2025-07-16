@@ -5,7 +5,7 @@ set -e
 
 REPO_URL="$1"
 REPO_NAME="$2"  # 이제 병렬 실행 시 고유한 이름이 전달됨
-BUILD_ID="$3"
+VERSION="$3"
 COMMIT_ID="$4"  # 병렬 실행 시 커밋 ID 전달됨
 
 # REPO_NAME과 BUILD_ID는 동적으로 받는 값으로 설정
@@ -47,9 +47,9 @@ if [[ -n "$COMMIT_ID" ]]; then
     git checkout "$COMMIT_ID"
 fi
 
-detect_java_version "$REPO_NAME" "$BUILD_ID"
+detect_java_version "$REPO_NAME" "$VERSION"
 
-IMAGE_TAG=$(cat "/tmp/cdxgen_image_tag_${REPO_NAME}_${BUILD_ID}.txt")
+IMAGE_TAG=$(cat "/tmp/cdxgen_image_tag_${REPO_NAME}_${VERSION}.txt")
 echo "[+] 선택된 CDXGEN 이미지 태그: $IMAGE_TAG"
 
 SBOM_FILE="${REPO_DIR}/sbom_${REPO_NAME}_${BUILD_ID}.json"
@@ -96,7 +96,7 @@ echo "[+] 컨테이너 준비 완료"
 echo "[+] SBOM 업로드 시작 (락 사용)"
 (
     flock -x -w 60 201 || exit 1
-    upload_sbom "$REPO_NAME" "$BUILD_ID" "$REPO_DIR"
+    upload_sbom "$REPO_NAME" "$VERSION" "$REPO_DIR" "$COMMIT_ID"
     echo "[+] SBOM 업로드 완료: $REPO_NAME"
 ) 201>"${LOCK_FILE}.upload"
 
