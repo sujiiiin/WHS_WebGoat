@@ -157,7 +157,7 @@ pipeline {
                                             echo "[+] SBOM 생성 시작: \$(date)"
                                             
                                             # 타임아웃 설정 (30분)
-                                            timeout 1800 /home/ec2-user/run_sbom_pipeline.sh "${repoUrl}" "${rname}" "${buildId}" "${commitId}" || {
+                                            timeout 1800 /home/ec2-user/run_sbom_pipeline.sh "${repoUrl}" "${rname}" "${version}" "${commitId}" || {
                                                 echo "[!] SBOM 생성 실패 또는 타임아웃: ${buildId}"
                                                 touch /tmp/sbom_failed_${shortHash}.flag
                                                 rm -f /tmp/sbom_processing_${shortHash}.flag
