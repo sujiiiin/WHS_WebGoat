@@ -129,4 +129,27 @@ for (int i = 0; i < pendingCommits.size(); i++) {
                         timeout 1800 /home/ec2-user/run_sbom_pipeline.sh "${repoUrl}" "${rname}" "${version}" "${commitId}" || {
                             echo "[!] SBOM 생성 실패 또는 타임아웃: ${buildId}"
                             touch /tmp/sbom_failed_${shortHash}.flag
-                            rm -료되었습니다."
+                            rm -f /tmp/sbom_processing_${shortHash}.flag
+                            exit 1
+                        }
+                        
+                        echo "[+] SBOM 생성 완료: ${buildId} at \$(date)"
+                        touch /tmp/sbom_processed_${shortHash}.flag
+                        rm -f /tmp/sbom_processing_${shortHash}.flag
+                        
+                        # 작업 디렉터리 정리
+                        rm -rf ${repoDir} || true
+                    ' > /tmp/sbom_${rname}_${buildId}.log 2>&1 &
+                    
+                    echo "[+] SBOM 생성 백그라운드 실행 시작: ${buildId}"
+                    echo "[+] 로그 파일: /tmp/sbom_${rname}_${buildId}.log"
+                    echo "[+] PID: \$!"
+                """
+            }
+        }
+    }
+}
+
+echo "🚀 ${jobs.size()}개의 SBOM 작업을 병렬로 실행합니다..."
+parallel jobs
+echo "✅ 모든 SBOM 작업이 백그라운드에서 완료되었습니다."
