@@ -1,3 +1,4 @@
+//최소정책 구현 ver
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -71,6 +72,10 @@ upload_sbom() {
     local PROJECT_VERSION="$VERSION"
     echo "🚀 SBOM 업로드 시작: $SBOM_FILE (projectVersion: $PROJECT_VERSION)"
 
+    # CVSS 점검 함수 호출
+    check_cvss "$REPO_NAME" "$VERSION" || return 1
+
+    # SBOM 업로드
     curl -X POST http://localhost:8080/api/v1/bom \
         -H "X-Api-Key: $DT_API_KEY" \
         -F "projectName=$REPO_NAME" \
@@ -78,3 +83,19 @@ upload_sbom() {
         -F "bom=@$SBOM_FILE" \
         -F "autoCreate=true"
 }
+
+# CVSS 점검 함수
+check_cvss() {
+    local REPO_NAME="$1"
+    local VERSION="$2"
+
+    # CVSS 점검 로직 (Python 스크립트 호출)
+    python3 /path/to/check_cvss.py "$REPO_NAME" "$VERSION" "$DT_URL" || {
+        echo "❌ CVSS 9 이상 취약점 발견. SBOM 업로드를 중단합니다."
+        return 1
+    }
+
+    echo "✅ CVSS 점검 통과"
+    return 0
+}
+
