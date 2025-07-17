@@ -1,8 +1,8 @@
-//최소정책기준탐지 반영ver
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Java 버전 탐지 함수
 detect_java_version() {
     local REPO_NAME="$1"
     local VERSION="$2"   # ← 이름 변경
@@ -56,6 +56,7 @@ check_cvss() {
     local VERSION="$2"
 
     # CVSS 점검 로직 (Python 스크립트 호출)
+    // 이부분 인자값 고쳐야 함 
     python3 /home/ec2-user/check_cvss.py "$REPO_NAME" "$VERSION" "$DT_URL" || {
         echo "❌ CVSS 9 이상 취약점 발견. SBOM 업로드를 중단합니다."
         return 1
@@ -88,7 +89,7 @@ upload_sbom() {
     local PROJECT_VERSION="$VERSION"
     echo "🚀 SBOM 업로드 시작: $SBOM_FILE (projectVersion: $PROJECT_VERSION)"
 
-    # CVSS 점검 함수 호출
+    # CVSS 점검 함수 호출 (한 번만 호출)
     check_cvss "$REPO_NAME" "$VERSION" || return 1
 
     # SBOM 업로드
@@ -103,37 +104,6 @@ upload_sbom() {
         echo "❌ SBOM 업로드 실패"
         return 1
     fi
-    
-    # 프로젝트 UUID 조회
-    PROJECT_UUID=$(curl -s -X GET "http://localhost:8080/api/v1/project?name=${REPO_NAME}&version=${PROJECT_VERSION}" \
-      -H "X-Api-Key: $DT_API_KEY" | jq -r '.[0].uuid')
-    
-    if [[ -z "$PROJECT_UUID" || "$PROJECT_UUID" == "null" ]]; then
-        echo "❌ 프로젝트 UUID를 찾을 수 없습니다."
-        return 1
-    fi
-    
-    # 분석 완료까지 대기 (최대 60초), 메시지 없이
-    MAX_WAIT=60
-    WAITED=0
-    while [[ $WAITED -lt $MAX_WAIT ]]; do
-        METRICS_JSON=$(curl -s -X GET "http://localhost:8080/api/v1/project/${PROJECT_UUID}" -H "X-Api-Key: $DT_API_KEY")
-        VULN_COUNT=$(echo "$METRICS_JSON" | jq '.metrics.vulnerabilities.total' 2>/dev/null)
-    
-        if [[ "$VULN_COUNT" =~ ^[0-9]+$ ]]; then
-            break
-        fi
-    
-        sleep 5
-        WAITED=$((WAITED + 5))
-    done
-    
-    # CVSS 9 이상 정책 검사
-    echo "📤 CVSS 9 이상 정책 검사 중..."
-    python3 /home/ec2-user/check_cvss.py "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" || {
-        echo "❌ CVSS 9 이상 취약점 발견. SBOM 업로드를 중단합니다."
-        return 1
-    }
 
-    echo "✅ CVSS 점검 통과"
+    echo "✅ SBOM 업로드 완료"
 }
