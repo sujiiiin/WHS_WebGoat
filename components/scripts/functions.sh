@@ -1,4 +1,4 @@
-//수정중  4
+//수정중  5
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
