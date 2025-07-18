@@ -1,4 +1,4 @@
-//테스트 수정용 
+// 테스트 수정용 
 
 // 오래된 processing 플래그 정리 (60분 이상 된 것)
 sh 'find /tmp -name "sbom_processing_*.flag" -mmin +60 -delete 2>/dev/null || true'
@@ -135,7 +135,6 @@ for (int i = 0; i < pendingCommits.size(); i++) {
                         # 타임아웃 설정 (10분)
                         timeout 600 /home/ec2-user/run_sbom_pipeline.sh "${repoUrl}" "${rname}" "${version}" "${commitId}" || 
                         {
-                        
                             # 실패 처리
                             if [[ $? -eq 124 ]]; then
                                 echo "[!] SBOM 생성 실패 또는 타임아웃: ${buildId}"
@@ -147,7 +146,6 @@ for (int i = 0; i < pendingCommits.size(); i++) {
                             exit 1
                         }
 
-                        
                         echo "[+] SBOM 생성 완료: ${buildId} at \$(date)"
                         touch /tmp/sbom_processed_${shortHash}.flag
                         rm -f /tmp/sbom_processing_${shortHash}.flag
@@ -155,7 +153,7 @@ for (int i = 0; i < pendingCommits.size(); i++) {
                         # 작업 디렉터리 정리
                         rm -rf ${repoDir} || true
                     ' > /tmp/sbom_${rname}_${buildId}.log 2>&1 &
-                    
+
                     echo "[+] SBOM 생성 백그라운드 실행 시작: ${buildId}"
                     echo "[+] 로그 파일: /tmp/sbom_${rname}_${buildId}.log"
                     echo "[+] PID: \$!"
@@ -168,4 +166,3 @@ for (int i = 0; i < pendingCommits.size(); i++) {
 echo "🚀 ${jobs.size()}개의 SBOM 작업을 병렬로 실행합니다..."
 parallel jobs
 echo "✅ 모든 SBOM 작업이 백그라운드에서 완료되었습니다."
-
