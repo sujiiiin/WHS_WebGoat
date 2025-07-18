@@ -1,4 +1,4 @@
-//수정중  3
+//수정중  4
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -102,9 +102,6 @@ upload_sbom() {
     local PROJECT_VERSION="$VERSION"
     echo "🚀 SBOM 업로드 시작: $SBOM_FILE (projectVersion: $PROJECT_VERSION)"
 
-    # CVSS 점검 함수 호출 (REPO_NAME 매개변수 추가)
-    check_cvss "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" "$REPO_NAME" || return 1
-
     # SBOM 업로드
     echo "[🔍] SBOM 업로드 실행 중..."
     curl -X POST http://localhost:8080/api/v1/bom \
@@ -123,4 +120,14 @@ upload_sbom() {
     fi
 
     echo "✅ SBOM 업로드 완료"
+    
+    # 2. 업로드 완료 후 CVSS 점검
+    echo "[⏳] 잠시 대기하세요 ... (CVSS 점검중)"
+    sleep 10  # Dependency-Track이 분석할 시간을 줌
+    
+    check_cvss "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" "$REPO_NAME" || {
+        echo "❌ [Debug] CVSS 점검 실패 - 하지만 SBOM 업로드는 완료됨"
+        return 1
+    }
 }
+
