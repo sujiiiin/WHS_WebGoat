@@ -7,10 +7,14 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 로그 파일 경로
+# 로그 파일 경로 (임시) 
 LOG_FILE="/tmp/functions.log"
 
-# 로그 함수 정의
+# 로그 기록 예시 (임시) 
+echo "CVSS 점검 시작: $(date)" >> $CVSS_LOG_FILE
+
+
+# 로그 함수 정의 (임시) 
 log_message() {
     local MESSAGE="$1"
     echo "$(date +'%Y-%m-%d %H:%M:%S') - $MESSAGE" >> $LOG_FILE
