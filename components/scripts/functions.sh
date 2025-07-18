@@ -141,29 +141,7 @@ upload_sbom() {
     log_message "[⏳] Dependency-Track 분석 완료까지 대기 중..."
     sleep 30
     
-    # 프로젝트 UUID 획득 - DT_URL 변수 정의
-    local DT_URL="http://localhost:8080"
-    local PROJECT_UUID
-    local retry_count=0
-    local max_retries=5
-    
-    while [[ $retry_count -lt $max_retries ]]; do
-        PROJECT_UUID=$(get_project_uuid "$REPO_NAME" "$PROJECT_VERSION" "$DT_API_KEY" "$DT_URL")
-        if [[ -n "$PROJECT_UUID" ]]; then
-            break
-        fi
-        
-        log_message "[⏳] 프로젝트 UUID 획득 재시도 ($((retry_count + 1))/$max_retries)..."
-        sleep 10
-        ((retry_count++))
-    done
-    
-    if [[ -z "$PROJECT_UUID" ]]; then
-        log_message "❌ 프로젝트 UUID 획득 실패 - CVSS 점검 건너뜀"
-        return 1
-    fi
-    
-    # CVSS 점검
+    # 이제 get_project_uuid()를 사용하지 않고 바로 check_cvss() 호출
     log_message "[DEBUG] check_cvss 함수 존재 확인"
     if type check_cvss &>/dev/null; then
         log_message "[DEBUG] check_cvss 함수 발견됨"
