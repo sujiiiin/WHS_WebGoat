@@ -57,7 +57,7 @@ check_cvss() {
     local DT_URL="$3"
 
     # CVSS 점검 로직 (Python 스크립트 호출)
-    python3 /home/ec2-user/check_cvss_1.py "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" || {
+    python3 /home/ec2-user/check_cvss_and_notify.py "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" || {
         echo "❌ CVSS 9 이상 취약점 발견. SBOM 업로드를 중단합니다."
         return 1
     }
