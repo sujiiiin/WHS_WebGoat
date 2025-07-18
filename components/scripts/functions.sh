@@ -126,7 +126,7 @@ upload_sbom() {
     sleep 10  # Dependency-Track이 분석할 시간을 줌
     
     check_cvss "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" "$REPO_NAME" || {
-        echo "❌ [Debug] CVSS 점검 실패 - 하지만 SBOM 업로드는 완료됨"
+        echo "❌ [Debug] CVSS 점검 실패"
         return 1
     }
 }
