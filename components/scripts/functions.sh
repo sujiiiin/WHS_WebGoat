@@ -1,4 +1,4 @@
-//수정중  7, project uuid 넘기는 부분 추가 
+//수정중  8, project uuid 넘기는 부분 추가 -> 했다가 다시 제거 
 
 #!/bin/bash
 
@@ -62,47 +62,6 @@ detect_java_version() {
     echo "$JAVA_VERSION" > "/tmp/cdxgen_java_version_${REPO_NAME}_${VERSION}.txt"
 }
 
-# 프로젝트 UUID 획득 함수
-get_project_uuid() {
-    local REPO_NAME="$1"
-    local VERSION="$2"
-    local DT_API_KEY="$3"
-    local DT_URL="$4"
-    
-    log_message "[+] 프로젝트 UUID 획득 시작: $REPO_NAME ($VERSION)"
-    
-    # 프로젝트 목록 조회 (URL 인코딩 처리)
-    local encoded_name=$(echo "$REPO_NAME" | sed 's/ /%20/g')
-    local encoded_version=$(echo "$VERSION" | sed 's/ /%20/g')
-    
-    local response=$(curl -s -X GET \
-        -H "X-Api-Key: $DT_API_KEY" \
-        "${DT_URL}/api/v1/project" 2>/dev/null)
-    
-    if [[ -z "$response" ]]; then
-        log_message "[⚠️] API 응답이 비어있음"
-        return 1
-    fi
-    
-    # jq를 사용하여 UUID 추출 (이름과 버전 매칭)
-    local project_uuid=$(echo "$response" | jq -r --arg name "$REPO_NAME" --arg version "$VERSION" \
-        '.[] | select(.name == $name and .version == $version) | .uuid' 2>/dev/null)
-    
-    if [[ -z "$project_uuid" || "$project_uuid" == "null" ]]; then
-        log_message "[⚠️] 프로젝트 UUID 획득 실패 - 이름: $REPO_NAME, 버전: $VERSION"
-        
-        # 디버깅을 위해 존재하는 프로젝트 목록 출력
-        log_message "[DEBUG] 존재하는 프로젝트들:"
-        echo "$response" | jq -r '.[] | "\(.name) (\(.version)) - \(.uuid)"' 2>/dev/null | head -5
-        
-        return 1
-    fi
-    
-    log_message "[✅] 프로젝트 UUID: $project_uuid"
-    echo "$project_uuid"
-    return 0
-}
-
 # CVSS 점검 함수
 check_cvss() {
     local PROJECT_UUID="$1"
@@ -112,13 +71,11 @@ check_cvss() {
 
     log_message "[+] CVSS 점검 시작 - PROJECT_UUID: $PROJECT_UUID, REPO_NAME: $REPO_NAME"
     
-    # 입력값 검증
     if [[ -z "$PROJECT_UUID" || -z "$DT_API_KEY" || -z "$DT_URL" || -z "$REPO_NAME" ]]; then
         log_message "[⚠️] CVSS 점검을 위한 필수 매개변수가 누락됨"
         return 1
     fi
     
-    # Python 스크립트 실행 (상세한 로그와 함께)
     log_message "[🔍] Python 스크립트 실행 중..."
     python3 /home/ec2-user/check_cvss_and_notify.py "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" "$REPO_NAME" 2>&1
     local python_exit_code=$?
