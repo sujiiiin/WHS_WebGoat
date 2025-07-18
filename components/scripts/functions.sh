@@ -56,15 +56,27 @@ check_cvss() {
     local PROJECT_UUID="$1"
     local DT_API_KEY="$2"
     local DT_URL="$3"
+    local REPO_NAME="$4"  # 추가된 매개변수
 
-    # CVSS 점검 로직 (Python 스크립트 호출)
-    python3 /home/ec2-user/check_cvss_and_notify.py "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" || {
+    echo "[+] CVSS 점검 시작 - PROJECT_UUID: $PROJECT_UUID, REPO_NAME: $REPO_NAME"
+    
+    # Python 스크립트 실행 (상세한 로그와 함께)
+    echo "[🔍] Python 스크립트 실행 중..."
+    python3 /home/ec2-user/check_cvss_and_notify.py "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" "$REPO_NAME" 2>&1
+    local python_exit_code=$?
+    
+    echo "[ℹ️] Python 스크립트 종료 코드: $python_exit_code"
+    
+    if [[ $python_exit_code -eq 2 ]]; then
         echo "❌ CVSS 9 이상 취약점 발견. SBOM 업로드를 중단합니다."
         return 1
-    }
-
-    echo "✅ CVSS 점검 통과"
-    return 0
+    elif [[ $python_exit_code -eq 0 ]]; then
+        echo "✅ CVSS 점검 통과"
+        return 0
+    else
+        echo "⚠️ CVSS 점검 중 예상치 못한 오류 발생 (exit code: $python_exit_code)"
+        return 1
+    fi
 }
 
 # SBOM 업로드 함수
@@ -90,18 +102,22 @@ upload_sbom() {
     local PROJECT_VERSION="$VERSION"
     echo "🚀 SBOM 업로드 시작: $SBOM_FILE (projectVersion: $PROJECT_VERSION)"
 
-    # CVSS 점검 함수 호출 (한 번만 호출)
-    check_cvss "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" || return 1
+    # CVSS 점검 함수 호출 (REPO_NAME 매개변수 추가)
+    check_cvss "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" "$REPO_NAME" || return 1
 
     # SBOM 업로드
+    echo "[🔍] SBOM 업로드 실행 중..."
     curl -X POST http://localhost:8080/api/v1/bom \
         -H "X-Api-Key: $DT_API_KEY" \
         -F "projectName=$REPO_NAME" \
         -F "projectVersion=$PROJECT_VERSION" \
         -F "bom=@$SBOM_FILE" \
-        -F "autoCreate=true"
+        -F "autoCreate=true" 2>&1
         
-    if [[ $? -ne 0 ]]; then
+    local curl_exit_code=$?
+    echo "[ℹ️] CURL 종료 코드: $curl_exit_code"
+    
+    if [[ $curl_exit_code -ne 0 ]]; then
         echo "❌ SBOM 업로드 실패"
         return 1
     fi
