@@ -1,8 +1,18 @@
-//수정중  6, project uuid 넘기는 부분 추가 
-// 이거 쓰면 안됨 
+//수정중  7, project uuid 넘기는 부분 추가 
+
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 로그 파일 경로
+LOG_FILE="/tmp/functions.log"
+
+# 로그 함수 정의
+log_message() {
+    local MESSAGE="$1"
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - $MESSAGE" >> $LOG_FILE
+}
+
 
 # Java 버전 탐지 함수
 detect_java_version() {
@@ -59,7 +69,7 @@ get_project_uuid() {
     local DT_API_KEY="$3"
     local DT_URL="$4"
     
-    echo "[+] 프로젝트 UUID 획득 시작: $REPO_NAME ($VERSION)"
+    log_message "[+] 프로젝트 UUID 획득 시작: $REPO_NAME ($VERSION)"
     
     # 프로젝트 목록 조회 (URL 인코딩 처리)
     local encoded_name=$(echo "$REPO_NAME" | sed 's/ /%20/g')
@@ -70,7 +80,7 @@ get_project_uuid() {
         "${DT_URL}/api/v1/project" 2>/dev/null)
     
     if [[ -z "$response" ]]; then
-        echo "[⚠️] API 응답이 비어있음"
+        log_message "[⚠️] API 응답이 비어있음"
         return 1
     fi
     
@@ -79,16 +89,16 @@ get_project_uuid() {
         '.[] | select(.name == $name and .version == $version) | .uuid' 2>/dev/null)
     
     if [[ -z "$project_uuid" || "$project_uuid" == "null" ]]; then
-        echo "[⚠️] 프로젝트 UUID 획득 실패 - 이름: $REPO_NAME, 버전: $VERSION"
+        log_message "[⚠️] 프로젝트 UUID 획득 실패 - 이름: $REPO_NAME, 버전: $VERSION"
         
         # 디버깅을 위해 존재하는 프로젝트 목록 출력
-        echo "[DEBUG] 존재하는 프로젝트들:"
+        log_message "[DEBUG] 존재하는 프로젝트들:"
         echo "$response" | jq -r '.[] | "\(.name) (\(.version)) - \(.uuid)"' 2>/dev/null | head -5
         
         return 1
     fi
     
-    echo "[✅] 프로젝트 UUID: $project_uuid"
+    log_message "[✅] 프로젝트 UUID: $project_uuid"
     echo "$project_uuid"
     return 0
 }
@@ -100,29 +110,29 @@ check_cvss() {
     local DT_URL="$3"
     local REPO_NAME="$4"
 
-    echo "[+] CVSS 점검 시작 - PROJECT_UUID: $PROJECT_UUID, REPO_NAME: $REPO_NAME"
+    log_message "[+] CVSS 점검 시작 - PROJECT_UUID: $PROJECT_UUID, REPO_NAME: $REPO_NAME"
     
     # 입력값 검증
     if [[ -z "$PROJECT_UUID" || -z "$DT_API_KEY" || -z "$DT_URL" || -z "$REPO_NAME" ]]; then
-        echo "[⚠️] CVSS 점검을 위한 필수 매개변수가 누락됨"
+        log_message "[⚠️] CVSS 점검을 위한 필수 매개변수가 누락됨"
         return 1
     fi
     
     # Python 스크립트 실행 (상세한 로그와 함께)
-    echo "[🔍] Python 스크립트 실행 중..."
+    log_message "[🔍] Python 스크립트 실행 중..."
     python3 /home/ec2-user/check_cvss_and_notify.py "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" "$REPO_NAME" 2>&1
     local python_exit_code=$?
     
-    echo "[ℹ️] Python 스크립트 종료 코드: $python_exit_code"
+    log_message "[ℹ️] Python 스크립트 종료 코드: $python_exit_code"
     
     if [[ $python_exit_code -eq 2 ]]; then
-        echo "❌ CVSS 9 이상 취약점 발견. SBOM 업로드를 중단합니다."
+        log_message "❌ CVSS 9 이상 취약점 발견. SBOM 업로드를 중단합니다."
         return 1
     elif [[ $python_exit_code -eq 0 ]]; then
-        echo "✅ CVSS 점검 통과"
+        log_message "✅ CVSS 점검 통과"
         return 0
     else
-        echo "⚠️ CVSS 점검 중 예상치 못한 오류 발생 (exit code: $python_exit_code)"
+        log_message "⚠️ CVSS 점검 중 예상치 못한 오류 발생 (exit code: $python_exit_code)"
         return 1
     fi
 }
@@ -135,7 +145,7 @@ upload_sbom() {
     local COMMIT_ID="$4"
 
     if [[ -z "$REPO_NAME" || -z "$VERSION" || -z "$REPO_DIR" || -z "$COMMIT_ID" ]]; then
-        echo "❌ upload_sbom 함수 호출 시 REPO_NAME, VERSION, REPO_DIR, COMMIT_ID가 필요합니다."
+        log_message "❌ upload_sbom 함수 호출 시 REPO_NAME, VERSION, REPO_DIR, COMMIT_ID가 필요합니다."
         return 1
     fi
 
@@ -143,15 +153,15 @@ upload_sbom() {
 
     local SBOM_FILE="${REPO_DIR}/sbom_${REPO_NAME}_${VERSION}.json"
     if [[ ! -f "$SBOM_FILE" ]]; then
-        echo "❌ SBOM 파일이 존재하지 않습니다: $SBOM_FILE"
+        log_message "❌ SBOM 파일이 존재하지 않습니다: $SBOM_FILE"
         return 1
     fi
 
     local PROJECT_VERSION="$VERSION"
-    echo "🚀 SBOM 업로드 시작: $SBOM_FILE (projectVersion: $PROJECT_VERSION)"
+    log_message "🚀 SBOM 업로드 시작: $SBOM_FILE (projectVersion: $PROJECT_VERSION)"
 
     # SBOM 업로드
-    echo "[🔍] SBOM 업로드 실행 중..."
+    log_message "[🔍] SBOM 업로드 실행 중..."
     local upload_response=$(curl -s -X POST http://localhost:8080/api/v1/bom \
         -H "X-Api-Key: $DT_API_KEY" \
         -F "projectName=$REPO_NAME" \
@@ -160,17 +170,17 @@ upload_sbom() {
         -F "autoCreate=true" 2>&1)
         
     local curl_exit_code=$?
-    echo "[ℹ️] CURL 종료 코드: $curl_exit_code"
+    log_message "[ℹ️] CURL 종료 코드: $curl_exit_code"
     
     if [[ $curl_exit_code -ne 0 ]]; then
-        echo "❌ SBOM 업로드 실패"
+        log_message "❌ SBOM 업로드 실패"
         return 1
     fi
 
-    echo "[DEBUG] 업로드 완료, 다음 단계 시작"
+    log_message "[DEBUG] 업로드 완료, 다음 단계 시작"
     
     # 업로드 후 분석 완료까지 대기 (더 긴 대기 시간)
-    echo "[⏳] Dependency-Track 분석 완료까지 대기 중..."
+    log_message "[⏳] Dependency-Track 분석 완료까지 대기 중..."
     sleep 30
     
     # 프로젝트 UUID 획득 - DT_URL 변수 정의
@@ -185,31 +195,31 @@ upload_sbom() {
             break
         fi
         
-        echo "[⏳] 프로젝트 UUID 획득 재시도 ($((retry_count + 1))/$max_retries)..."
+        log_message "[⏳] 프로젝트 UUID 획득 재시도 ($((retry_count + 1))/$max_retries)..."
         sleep 10
         ((retry_count++))
     done
     
     if [[ -z "$PROJECT_UUID" ]]; then
-        echo "❌ 프로젝트 UUID 획득 실패 - CVSS 점검 건너뜀"
+        log_message "❌ 프로젝트 UUID 획득 실패 - CVSS 점검 건너뜀"
         return 1
     fi
     
     # CVSS 점검
-    echo "[DEBUG] check_cvss 함수 존재 확인"
+    log_message "[DEBUG] check_cvss 함수 존재 확인"
     if type check_cvss &>/dev/null; then
-        echo "[DEBUG] check_cvss 함수 발견됨"
+        log_message "[DEBUG] check_cvss 함수 발견됨"
     else
-        echo "[ERROR] check_cvss 함수가 정의되지 않음"
+        log_message "[ERROR] check_cvss 함수가 정의되지 않음"
         return 1
     fi
     
-    echo "[DEBUG] check_cvss 호출 시작"
+    log_message "[DEBUG] check_cvss 호출 시작"
     check_cvss "$PROJECT_UUID" "$DT_API_KEY" "$DT_URL" "$REPO_NAME" || {
-        echo "❌ [Debug] CVSS 점검 실패 - 하지만 SBOM 업로드는 완료됨"
+        log_message "❌ [Debug] CVSS 점검 실패 - 하지만 SBOM 업로드는 완료됨"
         return 1
     }
     
-    echo "[DEBUG] check_cvss 완료"
-    echo "✅ SBOM 업로드 및 CVSS 점검 완료"
+    log_message "[DEBUG] check_cvss 완료"
+    log_message "✅ SBOM 업로드 및 CVSS 점검 완료"
 }
