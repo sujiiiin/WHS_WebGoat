@@ -28,7 +28,7 @@ REPORT_FILE="sonar_issues_${timestamp}.json"
 
 echo "[*] 분석 결과 파일 저장 중: $REPORT_FILE"
 curl -s -H "Authorization: Bearer $SONAR_AUTH_TOKEN" \
-     "$SONAR_HOST_URL/api/issues/search?componentKeys=webgoat" \
+     "$SONAR_HOST_URL/api/issues/search?componentKeys=webgoat&statuses=OPEN,REOPENED,CONFIRMED&ps=500" \
      -o "$REPORT_FILE"
 
 S3_BUCKET="ss-bucket-0305"
