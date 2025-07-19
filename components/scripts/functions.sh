@@ -133,16 +133,31 @@ upload_sbom() {
     # 업로드 후 분석 완료까지 대기 (더 긴 대기 시간)
     log_message "[⏳] Dependency-Track 분석 완료까지 대기 중..."
     sleep 30
-    
-    # 프로젝트 UUID 조회를 파이썬 스크립트에서 처리하므로 호출
-    log_message "[DEBUG] check_cvss 함수 호출 시작"
-    python3 /home/ec2-user/check_cvss_and_notify_2.py "$REPO_NAME" "$PROJECT_VERSION" "$DT_API_KEY" "http://localhost:8080" || {
-        log_message "❌ CVSS 점검 실패"
-        return 1
-    }
-    
-    log_message "[DEBUG] check_cvss 완료"
-    log_message "✅ SBOM 업로드 및 CVSS 점검 완료"
 }
+
+# CVSS 파이썬 스크립트 호출 함수
+run_cvss_check() {
+    local REPO_NAME="$1"
+    local VERSION="$2"
+    local DT_API_KEY="$3"
+    local DT_URL="$4"
+
+    if [[ -z "$REPO_NAME" || -z "$VERSION" || -z "$DT_API_KEY" || -z "$DT_URL" ]]; then
+        log_message "❌ run_cvss_check 호출 시 인자가 부족합니다."
+        return 1
+    fi
+
+    log_message "[DEBUG] run_cvss_check() 호출 시작"
+    python3 /home/ec2-user/check_cvss_and_notify_2.py "$REPO_NAME" "$VERSION" "$DT_API_KEY" "$DT_URL"
+    local status=$?
+    if [[ $status -ne 0 ]]; then
+        log_message "❌ CVSS 점검 실패 (exit code $status)"
+        return $status
+    fi
+
+    log_message "✅ CVSS 점검 성공"
+    return 0
+}
+
 
 
