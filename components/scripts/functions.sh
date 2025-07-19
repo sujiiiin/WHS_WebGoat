@@ -7,6 +7,10 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# 환경변수 강제 로드
+source /home/ec2-user/.env
+
+
 # 로그 파일 경로 (임시) 
 LOG_FILE="/tmp/functions.log"
 
