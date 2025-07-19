@@ -136,29 +136,31 @@ upload_sbom() {
     sleep 30
 }
 
-# CVSS 파이썬 스크립트 호출 함수
-run_cvss_check() {
+# CVSS 점검 함수
+check_cvss() {
     local REPO_NAME="$1"
     local VERSION="$2"
-    local DT_API_KEY="$3"
-    local DT_URL="$4"
 
-    if [[ -z "$REPO_NAME" || -z "$VERSION" || -z "$DT_API_KEY" || -z "$DT_URL" ]]; then
-        log_message "❌ run_cvss_check 호출 시 인자가 부족합니다."
+    if [[ -z "$REPO_NAME" || -z "$VERSION" ]]; then
+        log_message "❌ check_cvss 호출 시 REPO_NAME과 VERSION이 필요합니다."
         return 1
     fi
 
-    log_message "[DEBUG] run_cvss_check() 호출 시작"
-    python3 /home/ec2-user/check_cvss_and_notify_2.py "$REPO_NAME" "$VERSION" "$DT_API_KEY" "$DT_URL"
-    local status=$?
-    if [[ $status -ne 0 ]]; then
-        log_message "❌ CVSS 점검 실패 (exit code $status)"
-        return $status
-    fi
+    source /home/ec2-user/.env
+    local SCRIPT_DIR="/home/ec2-user"
+    local API_KEY="$DT_API_KEY"
+    local DT_URL="$DT_URL"
 
-    log_message "✅ CVSS 점검 성공"
-    return 0
+    log_message "[🔍] check_cvss_and_notify.py 실행 시작"
+    local CMD="python3 $SCRIPT_DIR/check_cvss_and_notify_2.py '$REPO_NAME' '$VERSION' '$API_KEY' '$DT_URL'"
+    log_message "[CMD] $CMD"
+
+    python3 "$SCRIPT_DIR/check_cvss_and_notify_2.py" "$REPO_NAME" "$VERSION" "$API_KEY" "$DT_URL"
+    local CVSS_EXIT=$?
+    log_message "[ℹ️] CVSS 점검 종료 코드: $CVSS_EXIT"
+    return $CVSS_EXIT
 }
+
 
 
 
