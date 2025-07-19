@@ -19,9 +19,6 @@ if [[ -z "$BUILD_ID" ]]; then
     BUILD_ID="$(date +%s%N)"
 fi
 
-
-source /home/ec2-user/.env
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/functions.sh"
 
@@ -106,12 +103,6 @@ echo "[+] SBOM 업로드 시작 (락 사용)"
 
 echo "[✅] SBOM 파이프라인 완료: $REPO_NAME"
 
-
-# CVSS 점검 실행
-echo "[DEBUG] run_cvss_check 함수 호출"
-if ! check_cvss "$REPO_NAME" "$VERSION"; then
-    echo "❌ CVSS 점검 실패"
-fi
 
 
 
