@@ -103,10 +103,10 @@ echo "[+] SBOM 업로드 시작 (락 사용)"
 
 echo "[✅] SBOM 파이프라인 완료: $REPO_NAME"
 
-echo "[DEBUG] check_cvss 함수 호출 시작"
-(
-    python3 /home/ec2-user/check_cvss_and_notify_2.py "$REPO_NAME" "$VERSION" "$DT_API_KEY" "http://localhost:8080"
-) || {
+
+# CVSS 점검 실행
+echo "[DEBUG] run_cvss_check 함수 호출"
+run_cvss_check "$REPO_NAME" "$VERSION" "$DT_API_KEY" "http://localhost:8080" || {
     echo "❌ CVSS 점검 실패"
 }
 
