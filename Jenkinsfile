@@ -75,15 +75,15 @@ pipeline {
                     def repoUrl = scm.userRemoteConfigs[0].url
                     def repoName = repoUrl.tokenize('/').last().replace('.git', '')
         
-                     백그라운드로 실행 (nohup)
+                    // 백그라운드로 실행 (nohup)
                     sh """
                         chmod +x components/scripts/run_sbom_1.sh
-                        nohup bash components/scripts/run_sbom_1.sh '${repoUrl}' '${repoName}' '${env.BUILD_NUMBER}' 2>&1 &
+                        nohup bash components/scripts/run_sbom_1.sh '${repoUrl}' '${repoName}' '${env.BUILD_NUMBER}' > /tmp/sbom.log 2>&1 &
                     """
-
-               }
+                }
             }
         }
+
 
 
 
