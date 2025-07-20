@@ -158,7 +158,7 @@ upload_sbom() {
 
     # CVSS 9 이상 검사
     log_message "📤 CVSS 9 이상 정책 검사 중..."
-    python3 $SCRIPT_DIR/check_cvss_and_notify_2.py "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" "$REPO_NAME"
+    python3 ./check_cvss_and_notify_2.py "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" "$REPO_NAME"
 }
 
 
