@@ -89,7 +89,8 @@ detect_java_version() {
     #return 0
 #} 
 
-# SBOM 업로드 함수
+#!/bin/bash
+
 upload_sbom() {
     local REPO_NAME="$1"
     local VERSION="$2"
@@ -109,7 +110,7 @@ upload_sbom() {
         return 1
     fi
 
-    local PROJECT_VERSION="$VERSION"
+    local PROJECT_VERSION="${VERSION}_$(date +%Y%m%d_%H%M%S)"
     log_message "🚀 SBOM 업로드 시작: $SBOM_FILE (projectVersion: $PROJECT_VERSION)"
 
     # SBOM 업로드
@@ -120,21 +121,46 @@ upload_sbom() {
         -F "projectVersion=$PROJECT_VERSION" \
         -F "bom=@$SBOM_FILE" \
         -F "autoCreate=true" 2>&1)
-        
+
     local curl_exit_code=$?
     log_message "[ℹ️] CURL 종료 코드: $curl_exit_code"
-    
     if [[ $curl_exit_code -ne 0 ]]; then
         log_message "❌ SBOM 업로드 실패"
         return 1
     fi
 
-    log_message "[DEBUG] 업로드 완료, 다음 단계 시작"
-    
-    # 업로드 후 분석 완료까지 대기 (더 긴 대기 시간)
+    # 프로젝트 UUID 조회
+    log_message "[🔍] 프로젝트 UUID 조회 중..."
+    sleep 5  # 약간의 시간 차 필요
+    local PROJECT_UUID=$(curl -s -X GET "http://localhost:8080/api/v1/project?name=${REPO_NAME}&version=${PROJECT_VERSION}" \
+        -H "X-Api-Key: $DT_API_KEY" | jq -r '.[0].uuid')
+
+    if [[ -z "$PROJECT_UUID" || "$PROJECT_UUID" == "null" ]]; then
+        log_message "❌ 프로젝트 UUID를 찾을 수 없습니다. (projectName: $REPO_NAME, projectVersion: $PROJECT_VERSION)"
+        return 1
+    fi
+
+    # 분석 완료까지 대기
     log_message "[⏳] Dependency-Track 분석 완료까지 대기 중..."
-    sleep 30
+    local MAX_WAIT=60
+    local WAITED=0
+    while [[ $WAITED -lt $MAX_WAIT ]]; do
+        local METRICS_JSON=$(curl -s -X GET "http://localhost:8080/api/v1/project/${PROJECT_UUID}" -H "X-Api-Key: $DT_API_KEY")
+        local VULN_COUNT=$(echo "$METRICS_JSON" | jq '.metrics.vulnerabilities.total' 2>/dev/null)
+
+        if [[ "$VULN_COUNT" =~ ^[0-9]+$ ]]; then
+            break
+        fi
+
+        sleep 5
+        WAITED=$((WAITED + 5))
+    done
+
+    # CVSS 9 이상 검사
+    log_message "📤 CVSS 9 이상 정책 검사 중..."
+    python3 $SCRIPT_DIR/check_cvss_and_notify_2.py "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" "$REPO_NAME"
 }
+
 
 check_cvss() {
     local REPO_NAME="$1"
