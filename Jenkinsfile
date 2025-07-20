@@ -77,7 +77,7 @@ pipeline {
         
                      백그라운드로 실행 (nohup)
                     sh """
-                         nohup bash components/scripts/run_sbom_1.sh '${repoUrl}' '${repoName}' '${env.BUILD_NUMBER}' > /home/ec2-user/logs/sbom_${env.BUILD_NUMBER}.log 2>&1 &
+                         nohup bash components/scripts/run_sbom_1.sh '${repoUrl}' '${repoName}' '${env.BUILD_NUMBER}' > 2>&1 &
                     """
                }
             }
