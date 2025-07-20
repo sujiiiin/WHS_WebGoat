@@ -168,7 +168,6 @@ done
 #pwd && cd /home/ec2-user && python3 check_cvss_and_notify.py "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" "$REPO_NAME" "$PROJECT_VERSION" 2>&1
 
 echo "📤 CVSS 9 이상 정책 검사 중..."
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-python3 "$SCRIPT_DIR/components/scripts/check_cvss_and_notify_2.py" "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" "$REPO_NAME" "$PROJECT_VERSION" 2>&1
+python3 components/scripts/check_cvss_and_notify_2.py "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" "$REPO_NAME" "$PROJECT_VERSION" 2>&1
 
 
