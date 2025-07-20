@@ -164,5 +164,5 @@ done
 # CVSS 9 이상 정책 검사
 echo "📤 CVSS 9 이상 정책 검사 중..."
 SCRIPT_DIR="/home/ec2-user"
-python3 "$SCRIPT_DIR/check_cvss_and_notify.py" "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" "$REPO_NAME" "$PROJECT_VERSION"
+python3 "$SCRIPT_DIR/check_cvss_and_notify.py" "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" "$REPO_NAME" "$PROJECT_VERSION" > /tmp/cvss.log 2>&1
 
