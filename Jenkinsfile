@@ -44,11 +44,26 @@ pipeline {
         }
 
         
-        stage('🚀 Generate SBOM for each commit') {
+        //stage('🚀 Generate SBOM for each commit') {
+        //    steps {
+        //        script {
+        //            load 'components/scripts/generate_sbom.groovy'
+        //    
+        //        }
+        //    }
+        //}
+         stage('🚀 Generate SBOM via CDXGEN Docker') {
+            agent { label 'sca' }
             steps {
                 script {
-                    load 'components/scripts/generate_sbom.groovy'
-            
+                    def repoUrl = scm.userRemoteConfigs[0].url
+                    def repoName = repoUrl.tokenize('/').last().replace('.git', '')
+        
+                    // 백그라운드로 실행 (nohup)
+                    sh """
+                         nohup /home/ec2-user/run_sbom_pipeline.sh '${repoUrl}' '${repoName}' '${env.BUILD_NUMBER}' > /home/ec2-user/logs/sbom_${env.BUILD_NUMBER}.log 2>&1 &
+                    """
+        
                 }
             }
         }
