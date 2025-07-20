@@ -153,7 +153,7 @@ MAX_WAIT=90
 WAITED=0
 while [[ $WAITED -lt $MAX_WAIT ]]; do
     METRICS_JSON=$(curl -s -X GET "http://localhost:8080/api/v1/project/${PROJECT_UUID}" -H "X-Api-Key: $DT_API_KEY")
-    VULN_COUNT=$(echo "$METRICS_JSON" | jq '.metrics.vulnerabilities.total' 2>/dev/null)
+    VULN_COUNT=$(echo "$METRICS_JSON" | jq '.metrics.vulnerabilities' 2>/dev/null)
 
     if [[ "$VULN_COUNT" =~ ^[0-9]+$ ]]; then
         break
@@ -165,5 +165,5 @@ done
 
 # CVSS 9 이상 정책 검사
 echo "📤 CVSS 9 이상 정책 검사 중..."
-(cd /home/ec2-user && python3 check_cvss_and_notify.py "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" "$REPO_NAME" "$PROJECT_VERSION") > /tmp/cvss.log 2>&1
+pwd && cd /home/ec2-user && python3 check_cvss_and_notify.py "$PROJECT_UUID" "$DT_API_KEY" "http://localhost:8080" "$REPO_NAME" "$PROJECT_VERSION" 2>&1
 
