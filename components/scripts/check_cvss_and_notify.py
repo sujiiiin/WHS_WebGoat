@@ -99,7 +99,6 @@ def main():
         if score >= 9:
             # print(vuln)
             component = vuln.get("components", {})[0]
-            print(component)
             component_name = (
                 component.get("purl") or
                 component.get("name") or
