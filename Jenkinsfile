@@ -6,8 +6,14 @@ pipeline {
         PATH        = "${env.JAVA_HOME}/bin:${env.PATH}"
         SSH_CRED_ID = "WH1_key"
         DYNAMIC_IMAGE_TAG = "dev-${env.BUILD_NUMBER}-${sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()}"
-        REPO_URL = 'https://github.com/WH-Hourglass/WebGoat.git'
-        BRANCH = 'develop'
+        ECR_REPO = "535052053335.dkr.ecr.ap-northeast-2.amazonaws.com/wh_1/devpos"
+        S3_BUCKET = "webgoat-codedeploy-bucket-soobin"
+        DEPLOY_APP = "webgoat-cd-app"
+        DEPLOY_GROUP = "webgoat-deploy-group"
+        REGION = "ap-northeast-2"
+        BUNDLE = "deploy2.zip"
+        SONARQUBE_ENV = "WH_sonarqube"
+        S3_BUCKET_DAST = "testdast"
     }
     // 테스트용 주석
     // 테스트용 주석2
