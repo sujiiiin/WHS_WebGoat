@@ -29,44 +29,12 @@ pipeline {
             }
         }
         
-       stage('🧪 SonarQube Background') {
-    agent { label 'SAST' }
-    steps {
-        withSonarQubeEnv(env.SONARQUBE_ENV) {
-            sh '''
-                chmod +x components/scripts/run_sonar_pipeline.sh
-                export SONAR_AUTH_TOKEN=$SONAR_AUTH_TOKEN;
-                export SONAR_HOST_URL=$SONAR_HOST_URL;
-                nohup bash components/scripts/run_sonar_pipeline.sh > sonar_pipeline.log 2>error.log &
-            '''
-        }
-    }
-}
         
         stage('🔨 Build JAR') {
             steps {
                 sh 'components/scripts/Build_JAR.sh'
             }
         }
-        
-
-        stage('🚀 Generate SBOM via CDXGEN Docker') {
-            agent { label 'SCA' }
-            steps {
-                script {
-                    def repoUrl = scm.userRemoteConfigs[0].url
-                    def repoName = repoUrl.tokenize('/').last().replace('.git', '')
-        
-                    // 백그라운드로 실행 (nohup)
-                    sh """
-                        chmod +x components/scripts/run_sbom.sh
-                        nohup bash components/scripts/run_sbom.sh '${repoUrl}' '${repoName}' '${env.BUILD_NUMBER}' > /tmp/sbom.log 2>&1 &
-                    """
-                }
-            }
-        }
-
-
 
 
         stage('🐳 Docker Build') {
@@ -87,14 +55,14 @@ pipeline {
             }
         }
 
-        //stage('🔍 ZAP 스캔 및 SecurityHub 전송') {
-          //  agent { label 'DAST' }
-            //steps {
-                // sh 'DYNAMIC_IMAGE_TAG=${DYNAMIC_IMAGE_TAG} components/scripts/DAST_Zap_Scan.sh'
-                //sh nohup bash -c "DYNAMIC_IMAGE_TAG=${DYNAMIC_IMAGE_TAG} components/scripts/DAST_Zap_Scan.sh" > zap_bg.log 2>&1 &
+        stage('🔍 ZAP 스캔 및 SecurityHub 전송') {
+            agent { label 'DAST' }
+            steps {
+                 sh 'DYNAMIC_IMAGE_TAG=${DYNAMIC_IMAGE_TAG} components/scripts/DAST_Zap_Scan.sh /WebGoat'
+                //sh nohup bash -c "DYNAMIC_IMAGE_TAG=${DYNAMIC_IMAGE_TAG} components/scripts/DAST_Zap_Scan.sh /WebGoat" > zap_bg.log 2>&1 &
 
-           // }
-       // }
+            }
+        }
 
         stage('🧩 Generate taskdef.json') {
             steps {
