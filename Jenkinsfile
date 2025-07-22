@@ -6,6 +6,14 @@ pipeline {
         PATH        = "${env.JAVA_HOME}/bin:${env.PATH}"
         SSH_CRED_ID = "WH1_key"
         DYNAMIC_IMAGE_TAG = "dev-${env.BUILD_NUMBER}-${sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()}"
+        ECR_REPO = "535052053335.dkr.ecr.ap-northeast-2.amazonaws.com/wh_1/devpos"
+        S3_BUCKET = "webgoat-codedeploy-bucket-soobin"
+        DEPLOY_APP = "webgoat-cd-app"
+        DEPLOY_GROUP = "webgoat-deploy-group"
+        REGION = "ap-northeast-2"
+        BUNDLE = "deploy2.zip"
+        SONARQUBE_ENV = "WH_sonarqube"
+        S3_BUCKET_DAST = "testdast"
     }
     // 테스트용 주석
     // 테스트용 주석2
@@ -21,33 +29,44 @@ pipeline {
             }
         }
         
-        stage('🧪 SonarQube Analysis') {
-            steps {
-                script {
-                    load 'components/scripts/sonarqube_analysis.groovy'
-                }
-            }
+       stage('🧪 SonarQube Background') {
+    agent { label 'SAST' }
+    steps {
+        withSonarQubeEnv(env.SONARQUBE_ENV) {
+            sh '''
+                chmod +x components/scripts/run_sonar_pipeline.sh
+                export SONAR_AUTH_TOKEN=$SONAR_AUTH_TOKEN;
+                export SONAR_HOST_URL=$SONAR_HOST_URL;
+                nohup bash components/scripts/run_sonar_pipeline.sh > sonar_pipeline.log 2>error.log &
+            '''
         }
-
+    }
+}
+        
         stage('🔨 Build JAR') {
             steps {
                 sh 'components/scripts/Build_JAR.sh'
             }
         }
         
+
         stage('🚀 Generate SBOM via CDXGEN Docker') {
             agent { label 'SCA' }
             steps {
                 script {
                     def repoUrl = scm.userRemoteConfigs[0].url
                     def repoName = repoUrl.tokenize('/').last().replace('.git', '')
-                    
+        
+                    // 백그라운드로 실행 (nohup)
                     sh """
-                        /home/ec2-user/run_sbom_pipeline.sh '${repoUrl}' '${repoName}' '${env.BUILD_NUMBER}'
+                        chmod +x components/scripts/run_sbom.sh
+                        nohup bash components/scripts/run_sbom.sh '${repoUrl}' '${repoName}' '${env.BUILD_NUMBER}' > /tmp/sbom.log 2>&1 &
                     """
                 }
             }
         }
+
+
 
 
         stage('🐳 Docker Build') {
@@ -70,9 +89,13 @@ pipeline {
 
         stage('🔍 ZAP 스캔 및 SecurityHub 전송') {
             agent { label 'DAST' }
-            steps {
-                // sh 'DYNAMIC_IMAGE_TAG=${DYNAMIC_IMAGE_TAG} components/scripts/DAST_Zap_Scan.sh'
-                //sh 'nohup components/scripts/DAST_Zap_Scan.sh > zap_bg.log 2>&1 &'
+             steps {
+            sh'''
+                      aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$ECR_REPO"
+                    '''
+
+                sh'nohup env DYNAMIC_IMAGE_TAG=${DYNAMIC_IMAGE_TAG} components/scripts/DAST_Zap_Scan.sh /WebGoat > zap_bg_${BUILD_NUMBER}.log 2>&1 
+
             }
         }
 
